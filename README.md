@@ -2,6 +2,8 @@
 You can use this script to notify your Telegram Bot of missed attestations and produced/missed block proposals for any validators of your choice. 
 As a bonus it generates a screenshot of the produced blocks too.
 
+![alt text](https://github.com/got3nks/eth-notifier/blob/main/ethnotifier.jpg?raw=true)
+
 ## Pre-requisites
 
 1. Install **chaind** and wait till it is fully sync'd: https://github.com/wealdtech/chaind. It will take few days, sit back and relax.
