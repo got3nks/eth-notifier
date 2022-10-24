@@ -18,6 +18,10 @@ Just edit the config.json file:
 
 ## Running the monitoring script
 
-Just execute it:
+First of all install the Node depenencies running:
+
+> npm install
+
+Then execute it:
 
 > node ethNotifier.js
