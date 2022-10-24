@@ -1,0 +1,17 @@
+{
+  "lastBlock": 4975000,
+  "telegram": {
+    "token": "<token>",
+    "chatId": [<chatId>]
+  },
+  "postgresql": {
+    "username": "chain",
+    "password": "<dbPassword>",
+    "host": "127.0.0.1:5432",
+    "database": "chain"
+  },
+  "validators" : {
+    "label one" : [1,2,3],
+    "label two" : [1000,2000,3000]
+  }
+}
