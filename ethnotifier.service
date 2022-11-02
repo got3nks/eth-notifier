@@ -1,0 +1,17 @@
+[Unit]
+Description=Ethereum Notifier
+After=lighthouse.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=300
+User=ethnotifier
+
+WorkingDirectory=/home/ethnotifier/
+ExecStart=/usr/bin/node /home/ethnotifier/ethNotifier.js
+SyslogIdentifier=eth-notifier
+
+[Install]
+WantedBy=multi-user.target
