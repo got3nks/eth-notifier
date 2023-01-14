@@ -142,7 +142,7 @@ function mainLoop() {
 								const attestations = data[2].rows;
 
 								proposerDuties.forEach(proposerDuty => {
-									var label = Object.keys(all_validators).find(key => all_validators[key].includes(parseInt(block['f_proposer_index'])));
+									var label = Object.keys(all_validators).find(key => all_validators[key].includes(parseInt(proposerDuty['f_validator_index'])));
 									if(block !== null && block['f_slot'] == proposerDuty['f_slot'] && block['f_proposer_index'] == proposerDuty['f_validator_index']) {
 										console.log(`SUCCESSFULLY PROPOSED BLOCK ${block['f_slot']} by validator ${block['f_proposer_index']} (${label})`);
 										
