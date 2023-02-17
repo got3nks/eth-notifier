@@ -102,7 +102,7 @@ var lastBlock = parseInt(nconf.get('lastBlock'));
 const validators_strings = Object.values(all_validators).flat().map(String);
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
 function mainLoop() {
-	sleep(10*60*1000).then(() => {
+	sleep(15*60*1000).then(() => {
 		var promises=[],
 			missedAttestations = {},
 			submittedAttestations = {};
