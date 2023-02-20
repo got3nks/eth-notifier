@@ -1,6 +1,6 @@
 process.env["NTBA_FIX_350"] = 1;
 const nconf = require('nconf');
-onst { Pool } = require("pg");
+const { Pool } = require("pg");
 const TelegramBot = require('node-telegram-bot-api');
 const emoji = require('node-emoji').emoji;
 const captureWebsite = require("fix-esm").require('capture-website');
