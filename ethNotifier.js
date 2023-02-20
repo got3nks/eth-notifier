@@ -60,7 +60,7 @@ function sendTelegramImage(img, caption="") {
 }
 
 async function getNewBlocks(fromBlockId) {
-  const query = `SELECT f_slot,f_proposer_index,f_canonical FROM t_blocks WHERE f_slot > $1 AND f_canonical = true`;
+  const query = `SELECT f_slot,f_proposer_index,f_canonical FROM t_blocks WHERE f_slot > $1 AND f_canonical = true ORDER BY f_slot ASC`;
   const values = [fromBlockId];
   return db.query(query, values);
 }
