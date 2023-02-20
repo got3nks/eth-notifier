@@ -1,24 +1,21 @@
 process.env["NTBA_FIX_350"] = 1;
 const nconf = require('nconf');
-const createSubscriber = require('pg-listen');
-const { Pool, Client } = require("pg");
+onst { Pool } = require("pg");
 const TelegramBot = require('node-telegram-bot-api');
 const emoji = require('node-emoji').emoji;
 const captureWebsite = require("fix-esm").require('capture-website');
 
-nconf.use('file', { file: './ethNotifier.json' });
+nconf.use('file', { file: './config.json' });
 nconf.load();
 
 const all_validators = nconf.get('validators');
 const pgConnectionObj = { connectionString: `postgresql://${nconf.get("postgresql:username")}:${nconf.get("postgresql:password")}@${nconf.get("postgresql:host")}/${nconf.get("postgresql:database")}` };
-const subscriber = createSubscriber(pgConnectionObj);
-const db = new Pool(pgConnectionObj); // new Client(pgConnectionObj);
+const db = new Pool(pgConnectionObj);
 
 const telegram = new TelegramBot(nconf.get("telegram:token"));
 const tgOpts = { parse_mode: 'Markdown' };
 
 process.on('exit', function () {
-  subscriber.close();
   db.end();
 });
 
@@ -26,7 +23,7 @@ process.on('beforeExit', async () => {
 	var msg = 'Ethereum Notifier about to exit: beforeExit emitted';
 	console.log(msg);
 	sendTelegramNotification(msg);
-	process.exit(0); // if you don't close yourself this will run forever
+	process.exit(0);
 });
 
 ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
@@ -100,28 +97,6 @@ async function getAttestations(fromBlockId, toBlockId, validators=null) {
   const values = [fromBlockId, toBlockId, validators];
   return db.query(query, values);
 }
-
-/*
-subscriber.notifications.on("my-channel", (payload) => {
-  // Payload as passed to subscriber.notify() (see below)
-  msg = "Received notification in 'my-channel':", payload;
-  console.log(msg);
-  // telegram.sendMessage(nconf.get("telegram:chatId"), msg, tgOpts);
-})
-
-subscriber.events.on("connected", () => {
-  console.error("Connected to database successfully.")
-})
-
-
-subscriber.events.on("error", (error) => {
-  console.error("Fatal database connection error:", error)
-  process.exit(1)
-})
-*/
-
-//subscriber.connect();
-//subscriber.listenTo("my-channel");
 
 var lastBlock = parseInt(nconf.get('lastBlock'));
 const validators_strings = Object.values(all_validators).flat().map(String);
