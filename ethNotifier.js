@@ -1,21 +1,24 @@
 process.env["NTBA_FIX_350"] = 1;
 const nconf = require('nconf');
-const { Pool } = require("pg");
+const createSubscriber = require('pg-listen');
+const { Pool, Client } = require("pg");
 const TelegramBot = require('node-telegram-bot-api');
 const emoji = require('node-emoji').emoji;
 const captureWebsite = require("fix-esm").require('capture-website');
 
-nconf.use('file', { file: './config.json' });
+nconf.use('file', { file: './ethNotifier.json' });
 nconf.load();
 
 const all_validators = nconf.get('validators');
 const pgConnectionObj = { connectionString: `postgresql://${nconf.get("postgresql:username")}:${nconf.get("postgresql:password")}@${nconf.get("postgresql:host")}/${nconf.get("postgresql:database")}` };
-const db = new Pool(pgConnectionObj);
+const subscriber = createSubscriber(pgConnectionObj);
+const db = new Pool(pgConnectionObj); // new Client(pgConnectionObj);
 
 const telegram = new TelegramBot(nconf.get("telegram:token"));
 const tgOpts = { parse_mode: 'Markdown' };
 
 process.on('exit', function () {
+  subscriber.close();
   db.end();
 });
 
@@ -23,7 +26,7 @@ process.on('beforeExit', async () => {
 	var msg = 'Ethereum Notifier about to exit: beforeExit emitted';
 	console.log(msg);
 	sendTelegramNotification(msg);
-	process.exit(0);
+	process.exit(0); // if you don't close yourself this will run forever
 });
 
 ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
@@ -97,6 +100,28 @@ async function getAttestations(fromBlockId, toBlockId, validators=null) {
   const values = [fromBlockId, toBlockId, validators];
   return db.query(query, values);
 }
+
+/*
+subscriber.notifications.on("my-channel", (payload) => {
+  // Payload as passed to subscriber.notify() (see below)
+  msg = "Received notification in 'my-channel':", payload;
+  console.log(msg);
+  // telegram.sendMessage(nconf.get("telegram:chatId"), msg, tgOpts);
+})
+
+subscriber.events.on("connected", () => {
+  console.error("Connected to database successfully.")
+})
+
+
+subscriber.events.on("error", (error) => {
+  console.error("Fatal database connection error:", error)
+  process.exit(1)
+})
+*/
+
+//subscriber.connect();
+//subscriber.listenTo("my-channel");
 
 var lastBlock = parseInt(nconf.get('lastBlock'));
 const validators_strings = Object.values(all_validators).flat().map(String);
@@ -207,17 +232,29 @@ function mainLoop() {
 	  			}
 
   			} else {
-  				sendTelegramNotification(emoji.question + ' Could not find new blocks - Consensus Client offline?');
+  				sendTelegramNotification(emoji.warning + ' Could not find new blocks - Consensus Client offline?');
   			}
   			
 	  		Promise.all(promises).then((results) => {
 	  			console.log('Processed all blocks until ',lastBlock);
 	  			
 	  			notifications = '';
+	  			missedAttestationsByLabel = {};
 	  			for (var [validatorIndex, blocks] of Object.entries(missedAttestations)) {
 	  				var label = Object.keys(all_validators).find(key => all_validators[key].includes(parseInt(validatorIndex)));
-					  blocks = blocks.map(x => '<a href="https://beaconcha.in/slot/'+x+'">'+x+'</a>');
-					  notifications += emoji.heavy_exclamation_mark + ' Validator <a href="https://beaconcha.in/validator/'+validatorIndex+'#attestations">'+validatorIndex+'</a> (<i>'+label+'</i>) missed '+blocks.length+' attestation(s) at block(s): '+blocks.join(',');
+	  				if(!missedAttestationsByLabel.hasOwnProperty(label)) {
+	  					missedAttestationsByLabel[label]={'count':0,'indexes':[],'blocks':[]};
+	  				}
+	  				missedAttestationsByLabel[label]['indexes'].push(validatorIndex);
+	  				missedAttestationsByLabel[label]['count'] = missedAttestationsByLabel[label]['count']+blocks.length;
+	  				missedAttestationsByLabel[label]['blocks'] = Array.from(new Set(missedAttestationsByLabel[label]['blocks'].concat(blocks).map(Number))).sort((a, b) => a - b);
+	  			}
+
+	  			for (var [label, obj] of Object.entries(missedAttestationsByLabel)) {
+					  var blocks = obj['blocks'].map(x => '<a href="https://beaconcha.in/slot/'+x+'">'+x+'</a>');
+					  var validators = obj['indexes'].map(x => '<a href="https://beaconcha.in/validator/'+x+'#attestations">'+x+'</a>'); // '<a href="https://beaconcha.in/validator/'+validatorIndex+'#attestations">'+validatorIndex+'</a>'
+					  var count = obj['count']; // blocks.length;
+					  notifications += emoji.heavy_exclamation_mark + ' <i>'+label+'</i> validator(s) '+validators+' missed '+count+' attestation(s) at block(s): '+blocks.join(',');
 					  notifications += '\n';
 					}
 	  			if(notifications.length > 0) {
