@@ -102,7 +102,7 @@ async function getBeaconWithdrawals(fromBlockId, toBlockId, validators=null) {
   if(!validators) {
   	validators = Object.values(all_validators).flat();
   }
-  const query = 'SELECT f_block_number, f_validator_index, f_address, f_amount FROM t_block_withdrawals WHERE f_block_number > $1 AND f_block_number <= $2 AND f_validator_index = ANY($3)';
+  const query = 'SELECT f_block_number, f_validator_index, f_address, CAST(f_amount AS DOUBLE PRECISION)/1000000000 as f_amount FROM t_block_withdrawals WHERE f_block_number > $1 AND f_block_number <= $2 AND f_validator_index = ANY($3)';
   const values = [fromBlockId, toBlockId, validators];
   return db.query(query, values);
 }
