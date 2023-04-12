@@ -98,6 +98,15 @@ async function getAttestations(fromBlockId, toBlockId, validators=null) {
   return db.query(query, values);
 }
 
+async function getBeaconWithdrawals(fromBlockId, toBlockId, validators=null) {
+  if(!validators) {
+  	validators = Object.values(all_validators).flat();
+  }
+  const query = 'SELECT f_block_number, f_validator_index, f_address, f_amount FROM t_block_withdrawals WHERE f_block_number > $1 AND f_block_number <= $2 AND f_validator_index = ANY($3)';
+  const values = [fromBlockId, toBlockId, validators];
+  return db.query(query, values);
+}
+
 var lastBlock = parseInt(nconf.get('lastBlock'));
 const validators_strings = Object.values(all_validators).flat().map(String);
 const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
@@ -134,12 +143,14 @@ function mainLoop() {
 		  				proposerDuties = getProposerDuties(lastBlock, currentBlock);
 		  				attestationDuties = getAttestationDuties(lastBlock, currentBlock);
 		  				attestations = getAttestations(lastBlock, currentBlock);
+						beaconWithdrawals = getBeaconWithdrawals(lastBlock, currentBlock);
 		  				
 		  				promises.push(new Promise((resolve, reject) => {
-			  				Promise.all([proposerDuties, attestationDuties, attestations]).then(data => {
+			  				Promise.all([proposerDuties, attestationDuties, attestations, beaconWithdrawals]).then(data => {
 								const proposerDuties = data[0].rows;
 								const attestationDuties = data[1].rows;
 								const attestations = data[2].rows;
+								const beaconWithdrawals = data[3].rows;
 
 								proposerDuties.forEach(proposerDuty => {
 									var label = Object.keys(all_validators).find(key => all_validators[key].includes(parseInt(proposerDuty['f_validator_index'])));
@@ -196,6 +207,11 @@ function mainLoop() {
 											submittedAttestations[validatorIndex].push(currentBlock);
 										}
 									});
+								});
+								beaconWithdrawals.forEach(beaconWithdrawal => {
+									var label = Object.keys(all_validators).find(key => all_validators[key].includes(parseInt(beaconWithdrawal['f_validator_index'])));
+									console.log(`Validator ${beaconWithdrawal['f_validator_index']} (${label}) received a beacon withdrawal at block number ${beaconWithdrawal['f_block_number']}`);
+									sendTelegramNotification(emoji.white_check_mark + ' Validator <a href="https://beaconcha.in/validator/'+beaconWithdrawal['f_validator_index']+'#withdrawals">'+beaconWithdrawal['f_validator_index']+'</a> (<i>'+label+'</i>) received a beacon withdrawal of '+beaconWithdrawal['f_amount']+' at block '+beaconWithdrawal['f_block_number'], {parse_mode : "HTML", disable_web_page_preview: true});
 								});
 								//console.log('Processed block ',currentBlock);
 								resolve(true);
