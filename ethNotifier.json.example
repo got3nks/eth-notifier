@@ -1,0 +1,15 @@
+{
+  "lastBlock": 13132000,
+  "maxConcurrentRequests": 30,
+  "batchSize": 100,
+  "pollingInterval": 60,
+  "epochsBeforeFinal": 1,
+  "telegram": {
+    "method": "bot-api",
+    "token": "YOUR_TELEGRAM_BOT_TOKEN",
+    "chatId": [123456789]
+  },
+  "validators": {
+    "My Validators": [123456,123457]
+  }
+}

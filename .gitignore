@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Configuration (contains sensitive tokens)
+ethNotifier.json
+
+# Test scripts
+send-test-notifications.js
+
+# Deployment scripts
+deploy.sh
+
+# Systemd service files
+*.service
+
+# Logs
+*.log
+npm-debug.log*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
