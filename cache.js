@@ -13,6 +13,11 @@ class LighthouseCache {
 
         this.hits = { blocks: 0, slotCommittees: 0 };
         this.misses = { blocks: 0, slotCommittees: 0 };
+
+        // Start periodic cleanup to remove expired entries
+        this.cleanupInterval = setInterval(() => {
+            this._cleanupExpired();
+        }, options.cleanupInterval || 3600000); // Run every hour by default
     }
 
     // Block cache methods
@@ -71,12 +76,47 @@ class LighthouseCache {
         }
     }
 
+    // Remove expired entries from all caches
+    _cleanupExpired() {
+        const now = Date.now();
+        let removedBlocks = 0;
+        let removedCommittees = 0;
+
+        // Clean blocks cache
+        for (const [key, entry] of this.blocks.entries()) {
+            if (now - entry.timestamp >= this.ttl) {
+                this.blocks.delete(key);
+                removedBlocks++;
+            }
+        }
+
+        // Clean committees cache
+        for (const [key, entry] of this.slotCommittees.entries()) {
+            if (now - entry.timestamp >= this.ttl) {
+                this.slotCommittees.delete(key);
+                removedCommittees++;
+            }
+        }
+
+        if (removedBlocks > 0 || removedCommittees > 0) {
+            console.log(`Cache cleanup: removed ${removedBlocks} expired blocks, ${removedCommittees} expired committees`);
+        }
+    }
+
     // Clear all caches
     clear() {
         this.blocks.clear();
         this.slotCommittees.clear();
         this.hits = { blocks: 0, slotCommittees: 0 };
         this.misses = { blocks: 0, slotCommittees: 0 };
+    }
+
+    // Stop cleanup interval (call when shutting down)
+    destroy() {
+        if (this.cleanupInterval) {
+            clearInterval(this.cleanupInterval);
+            this.cleanupInterval = null;
+        }
     }
 
     // Get cache statistics
