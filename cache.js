@@ -163,6 +163,7 @@ class LighthouseCache {
 }
 
 module.exports = new LighthouseCache({
-    maxSize: 10000,  // Keep up to 10k items
-    ttl: 7200000     // 2 hours (blocks are immutable once finalized)
+    maxSize: 2000,           // Keep up to 2k items
+    ttl: 1800000,            // 30 minutes
+    cleanupInterval: 600000  // 10 minutes
 });
