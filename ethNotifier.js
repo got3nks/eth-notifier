@@ -497,3 +497,22 @@ async function mainLoop() {
 }
 
 mainLoop();
+
+// Graceful shutdown handler to clean up resources
+function gracefulShutdown(signal) {
+    console.log(`\nReceived ${signal}, shutting down gracefully...`);
+
+    // Stop cache cleanup interval
+    cache.destroy();
+    console.log('Cache cleanup stopped');
+
+    // Print final cache statistics
+    console.log('\nFinal cache statistics:');
+    cache.printStats();
+
+    process.exit(0);
+}
+
+// Register shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
