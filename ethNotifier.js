@@ -21,6 +21,7 @@ const pollingInterval = nconf.get('pollingInterval') || 60;
 const epochsBeforeFinal = nconf.get('epochsBeforeFinal') || 1;
 const telegramMethod = nconf.get('telegram:method') || 'bot-api';
 const maxConcurrentRequests = nconf.get('maxConcurrentRequests') || 30;
+const beaconchainApiKey = nconf.get('beaconchainApiKey') || '';
 
 // Validate required configuration
 if (!all_validators || typeof all_validators !== 'object' || Object.keys(all_validators).length === 0) {
@@ -45,6 +46,7 @@ console.log('  Batch size:', batchSize, 'slots per batch');
 console.log('  Polling interval:', pollingInterval, 'seconds');
 console.log('  Epochs before final:', epochsBeforeFinal, 'epoch(s)');
 console.log('  Max concurrent requests:', maxConcurrentRequests);
+console.log('  Beaconcha.in API v2:', beaconchainApiKey ? 'configured' : 'not configured (MEV rewards disabled)');
 
 (async function () {
     try {
@@ -258,12 +260,21 @@ async function mainLoop() {
                         );
 
                         // Check MEV reward (async, don't wait)
-                        if (execBlockNumber) {
-                            axios.get(`https://beaconcha.in/api/v1/execution/block/${execBlockNumber}`)
+                        if (execBlockNumber && beaconchainApiKey) {
+                            axios.post('https://beaconcha.in/api/v2/ethereum/block/rewards', {
+                                chain: 'mainnet',
+                                block: { number: execBlockNumber }
+                            }, {
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${beaconchainApiKey}`
+                                }
+                            })
                                 .then(response => {
-                                    const data = response.data?.data?.[0];
-                                    if (data?.blockMevReward && data.blockMevReward > 0) {
-                                        const mevReward = (data.blockMevReward / 1e18).toFixed(5);
+                                    const data = response.data?.data;
+                                    const mevAmountStr = data?.mev?.amount;
+                                    if (mevAmountStr && BigInt(mevAmountStr) > 0n) {
+                                        const mevReward = (Number(BigInt(mevAmountStr)) / 1e18).toFixed(5);
                                         sendTelegramNotification(
                                             emoji.get('moneybag') + ' MEV Reward for slot <a href="https://beaconcha.in/slot/' + slot + '">' + slot + '</a> (exec block ' + execBlockNumber + '): ' + mevReward + ' ETH',
                                             { parse_mode: "HTML", disable_web_page_preview: true }

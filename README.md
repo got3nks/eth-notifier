@@ -7,7 +7,7 @@ A real-time monitoring tool for Ethereum validators that sends Telegram notifica
 ## Features
 
 - **Block Proposal Monitoring**: Notifications for successful and missed block proposals
-- **MEV Reward Tracking**: Automatic detection and reporting of MEV rewards for proposed blocks
+- **MEV Reward Tracking**: Automatic detection and reporting of MEV rewards for proposed blocks (requires [Beaconcha.in](https://beaconcha.in) API key)
 - **Attestation Monitoring**: Detection of missed attestations with batch notifications
 - **Withdrawal Notifications**: Alerts for beacon chain withdrawals
 - **Batch Processing**: Efficient processing of multiple slots with configurable batch sizes
@@ -34,6 +34,7 @@ A real-time monitoring tool for Ethereum validators that sends Telegram notifica
 
 ### Optional
 
+- **[Beaconcha.in](https://beaconcha.in) API key** for MEV reward tracking on proposed blocks (obtain from [beaconcha.in/pricing](https://beaconcha.in/pricing))
 - **telegram-cli-wrapper** (only if using `wrapper` method for Telegram notifications)
 
 ## Installation
@@ -67,6 +68,7 @@ Edit `ethNotifier.json` to configure the notifier:
   "batchSize": 100,
   "pollingInterval": 60,
   "epochsBeforeFinal": 1,
+  "beaconchainApiKey": "YOUR_BEACONCHAIN_API_KEY",
   "telegram": {
     "method": "bot-api",
     "token": "YOUR_TELEGRAM_BOT_TOKEN",
@@ -87,6 +89,7 @@ Edit `ethNotifier.json` to configure the notifier:
 | `batchSize` | number | Number of slots to process per batch (default: 100)                |
 | `pollingInterval` | number | Seconds between polling cycles (default: 60)                       |
 | `epochsBeforeFinal` | number | Number of epochs behind head to process (default: 1)               |
+| `beaconchainApiKey` | string | [Beaconcha.in](https://beaconcha.in) API key for MEV reward tracking (optional) |
 | `telegram.method` | string | Telegram method: `"bot-api"` or `"wrapper"` (default: `"bot-api"`) |
 | `telegram.token` | string | Your Telegram bot token                                            |
 | `telegram.chatId` | array | Array of Telegram chat IDs to send notifications to                |
@@ -269,4 +272,4 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 
 - Built for the Ethereum community
 - Uses the Lighthouse Beacon Node API
-- MEV data from [beaconcha.in](https://beaconcha.in)
+- MEV data from [beaconcha.in API v2](https://beaconcha.in)

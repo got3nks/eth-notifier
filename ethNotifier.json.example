@@ -4,6 +4,7 @@
   "batchSize": 100,
   "pollingInterval": 60,
   "epochsBeforeFinal": 1,
+  "beaconchainApiKey": "YOUR_BEACONCHAIN_API_KEY",
   "telegram": {
     "method": "bot-api",
     "token": "YOUR_TELEGRAM_BOT_TOKEN",
