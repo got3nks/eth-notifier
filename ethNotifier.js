@@ -213,14 +213,14 @@ async function mainLoop() {
                 }
 
                 // Fetch committees in chunks with limited concurrency
+                // Connection errors propagate up to abort the batch
                 const committeeResults = await processInChunks(
                     slotsToFetch,
-                    (slot) => getCachedCommittees(slot).catch(() => null),
+                    (slot) => getCachedCommittees(slot),
                     maxConcurrentRequests
                 );
 
-                const successCount = committeeResults.filter(c => c !== null).length;
-                console.log(`[Batch ${batchNum + 1}/${numBatches}] Pre-fetched committees for ${successCount}/${slotsToFetch.length} slots`);
+                console.log(`[Batch ${batchNum + 1}/${numBatches}] Pre-fetched committees for ${committeeResults.length}/${slotsToFetch.length} slots`);
 
                 const [proposerDutiesResult, attestationDutiesResult, attestationsResult, withdrawalsResult] = await Promise.all([
                     getProposerDuties(batchStartSlot, batchEndSlot, validatorsToMonitor),
@@ -478,11 +478,9 @@ async function mainLoop() {
                 console.error(`[Batch ${batchNum + 1}/${numBatches}] Error:`, error.message);
                 sendTelegramNotification(emoji.get('x') + ` Error processing batch ${batchNum + 1}: ${error.message}`);
 
-                // Save progress anyway
-                lastBlock = batchEndSlot;
-                nconf.set('lastBlock', lastBlock);
-                nconf.save();
-                console.log(`[Batch ${batchNum + 1}/${numBatches}] Progress saved despite error`);
+                // Do NOT advance lastBlock — the cycle will retry these slots
+                console.log(`[Batch ${batchNum + 1}/${numBatches}] Will retry this batch on next cycle`);
+                break;
             }
         }
 

@@ -13,6 +13,21 @@ const cache = require('./cache');
 const LIGHTHOUSE_URL = process.env.LIGHTHOUSE_URL || 'http://127.0.0.1:5052';
 const SLOTS_PER_EPOCH = 32;
 
+// Connection error codes that indicate Lighthouse is unreachable
+const CONNECTION_ERROR_CODES = ['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EAI_AGAIN', 'EHOSTUNREACH'];
+
+/**
+ * Check if an error is a connection error and re-throw it if so.
+ * Connection errors should propagate up to abort the cycle,
+ * while other errors (e.g. 404) can be handled gracefully.
+ */
+function rethrowIfConnectionError(error) {
+    const code = error.code || (error.cause && error.cause.code);
+    if (CONNECTION_ERROR_CODES.includes(code)) {
+        throw error;
+    }
+}
+
 // Helper to convert slot to epoch
 function slotToEpoch(slot) {
     return Math.floor(slot / SLOTS_PER_EPOCH);
@@ -73,6 +88,7 @@ async function getCachedBlock(slot) {
                 cache.setBlock(slot, null);
                 return null;
             }
+            rethrowIfConnectionError(error);
             throw error;
         } finally {
             // Clean up in-flight request tracker
@@ -174,12 +190,14 @@ async function getNewBlocks(fromBlockId) {
                 }
                 // If blockData is null, slot was missed/skipped - continue
             } catch (error) {
+                rethrowIfConnectionError(error);
                 console.error(`Error fetching block at slot ${slot}:`, error.message);
             }
         }
 
         return { rows: blocks };
     } catch (error) {
+        rethrowIfConnectionError(error);
         console.error('Error in getNewBlocks:', error.message);
         return { rows: [] };
     }
@@ -223,12 +241,14 @@ async function getProposerDuties(fromBlockId, toBlockId, validators = null) {
                     }
                 });
             } catch (error) {
+                rethrowIfConnectionError(error);
                 console.error(`Error fetching proposer duties for epoch ${epoch}:`, error.message);
             }
         }
-        
+
         return { rows: allDuties };
     } catch (error) {
+        rethrowIfConnectionError(error);
         console.error('Error in getProposerDuties:', error.message);
         return { rows: [] };
     }
@@ -265,6 +285,7 @@ async function getAttestationDuties(fromBlockId, toBlockId, validators = null) {
                     }
                 });
             } catch (error) {
+                rethrowIfConnectionError(error);
                 if (error.response && error.response.status === 404) {
                     // State not available for this slot, skip
                     continue;
@@ -275,6 +296,7 @@ async function getAttestationDuties(fromBlockId, toBlockId, validators = null) {
 
         return { rows: allCommittees };
     } catch (error) {
+        rethrowIfConnectionError(error);
         console.error('Error in getAttestationDuties:', error.message);
         return { rows: [] };
     }
@@ -418,10 +440,12 @@ async function getAttestations(fromBlockId, toBlockId, validators = null) {
                             }
                         }
                     } catch (error) {
+                        rethrowIfConnectionError(error);
                         console.error(`Error fetching committee for attestation:`, error.message);
                     }
                 }
             } catch (error) {
+                rethrowIfConnectionError(error);
                 console.error(`Error processing attestations at slot ${slot}:`, error.message);
             }
         }
@@ -457,6 +481,7 @@ async function getAttestations(fromBlockId, toBlockId, validators = null) {
 
         return { rows: deduplicatedAttestations };
     } catch (error) {
+        rethrowIfConnectionError(error);
         console.error('Error in getAttestations:', error.message);
         return { rows: [] };
     }
@@ -591,12 +616,14 @@ async function getBeaconWithdrawals(fromBlockId, toBlockId, validators = null) {
                     });
                 }
             } catch (error) {
+                rethrowIfConnectionError(error);
                 console.error(`Error processing withdrawals at slot ${slot}:`, error.message);
             }
         }
 
         return { rows: allWithdrawals };
     } catch (error) {
+        rethrowIfConnectionError(error);
         console.error('Error in getBeaconWithdrawals:', error.message);
         return { rows: [] };
     }
